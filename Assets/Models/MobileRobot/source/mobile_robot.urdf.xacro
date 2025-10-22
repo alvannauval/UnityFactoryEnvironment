@@ -1,0 +1,122 @@
+<?xml version="1.0" ?>
+<robot name="mobile_robot" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Include your mecanum wheel macro -->
+  <xacro:include filename="$(find fuji_mecanum)/urdf/mecanum_wheel_macro.xacro" />
+
+  <!-- ===================== -->
+  <!-- Base and parameter setup -->
+  <!-- ===================== -->
+  <xacro:property name="base_length" value="0.8" />   <!-- x dimension (front–rear) -->
+  <xacro:property name="base_width"  value="0.5" />   <!-- y dimension (left–right) -->
+  <xacro:property name="base_height" value="0.25" />  <!-- z dimension -->
+  <xacro:property name="base_mass"   value="40.0" />  <!-- realistic base mass (kg) -->
+
+  <!-- Wheel parameters -->
+  <xacro:property name="wheel_radius" value="0.06" /> <!-- 12 cm diameter -->
+  <xacro:property name="edge_margin_x" value="0.05" /> <!-- front/rear inset -->
+  <xacro:property name="edge_margin_y" value="-0.035" /> <!-- left/right inset -->
+
+  <!-- Derived quantities -->
+  <xacro:property name="half_length" value="${base_length/2.0}" />
+  <xacro:property name="half_width"  value="${base_width/2.0}" />
+  <xacro:property name="half_height" value="${base_height/2.0}" />
+
+  <xacro:property name="front_x" value="${half_length - edge_margin_x}" />
+  <xacro:property name="rear_x"  value="${-half_length + edge_margin_x}" />
+  <xacro:property name="left_y"  value="${half_width - edge_margin_y}" />
+  <xacro:property name="right_y" value="${-half_width + edge_margin_y}" />
+
+  <!-- Wheel center Z (so wheel touches ground at z = -half_height) -->
+  <xacro:property name="wheel_center_z" value="${-half_height + wheel_radius}" />
+
+  <!-- ===================== -->
+  <!-- Base link -->
+  <!-- ===================== -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="${base_length} ${base_width} ${base_height}" />
+      </geometry>
+    </visual>
+
+    <collision>
+      <geometry>
+        <box size="${base_length} ${base_width} ${base_height}" />
+      </geometry>
+    </collision>
+
+    <inertial>
+      <origin xyz="0 0 0" />
+      <mass value="${base_mass}" />
+      <!-- Computed inertia for rectangular box -->
+      <!-- Ixx = 1/12 m (w^2 + h^2) -->
+      <!-- Iyy = 1/12 m (l^2 + h^2) -->
+      <!-- Izz = 1/12 m (l^2 + w^2) -->
+      <inertia ixx="${(1/12.0)*base_mass*(base_width*base_width + base_height*base_height)}"
+               iyy="${(1/12.0)*base_mass*(base_length*base_length + base_height*base_height)}"
+               izz="${(1/12.0)*base_mass*(base_length*base_length + base_width*base_width)}"
+               ixy="0.0" ixz="0.0" iyz="0.0" />
+    </inertial>
+  </link>
+
+  <!-- Gazebo surface and physics settings -->
+  <gazebo reference="base_link">
+    <mu1 value="0.6"/>
+    <mu2 value="0.6"/>
+    <kp value="10000000.0"/>
+    <kd value="1.0"/>
+    <fdir1 value="0 1 0"/>
+  </gazebo>
+
+  <!-- ===================== -->
+  <!-- Wheel macros -->
+  <!-- ===================== -->
+  <xacro:mecanum_wheel name="front_right" side="1"  interface="hardware_interface/EffortJointInterface"/>
+  <xacro:mecanum_wheel name="front_left"  side="-1" interface="hardware_interface/EffortJointInterface"/>
+  <xacro:mecanum_wheel name="rear_right"  side="-1" interface="hardware_interface/EffortJointInterface"/>
+  <xacro:mecanum_wheel name="rear_left"   side="1"  interface="hardware_interface/EffortJointInterface"/>
+
+  <!-- ===================== -->
+  <!-- Wheel joints (auto-calculated origins) -->
+  <!-- ===================== -->
+  <joint name="front_right_wheel_joint" type="continuous">
+    <origin xyz="${front_x} ${right_y} ${wheel_center_z}" rpy="0 0 ${pi/2}" />
+    <axis xyz="1 0 0" />
+    <parent link="base_link" />
+    <child link="front_right_wheel_link" />
+  </joint>
+
+  <joint name="front_left_wheel_joint" type="continuous">
+    <origin xyz="${front_x} ${left_y} ${wheel_center_z}" rpy="0 0 ${pi/2}" />
+    <axis xyz="1 0 0" />
+    <parent link="base_link" />
+    <child link="front_left_wheel_link" />
+  </joint>
+
+  <joint name="rear_right_wheel_joint" type="continuous">
+    <origin xyz="${rear_x} ${right_y} ${wheel_center_z}" rpy="0 0 ${pi/2}" />
+    <axis xyz="1 0 0" />
+    <parent link="base_link" />
+    <child link="rear_right_wheel_link" />
+  </joint>
+
+  <joint name="rear_left_wheel_joint" type="continuous">
+    <origin xyz="${rear_x} ${left_y} ${wheel_center_z}" rpy="0 0 ${pi/2}" />
+    <axis xyz="1 0 0" />
+    <parent link="base_link" />
+    <child link="rear_left_wheel_link" />
+  </joint>
+
+  <!-- ===================== -->
+  <!-- Gazebo ROS control plugin -->
+  <!-- ===================== -->
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/</robotNamespace>
+      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+      <legacyModeNS>true</legacyModeNS>
+    </plugin>
+  </gazebo>
+
+</robot>

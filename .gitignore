@@ -1,0 +1,26 @@
+# Unity generated folders
+Library/
+Temp/
+Obj/
+Logs/
+
+# User-specific settings
+UserSettings/
+*.csproj
+*.sln
+*.user
+*.userprefs
+*.pidb
+*.booproj
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE/editor folders
+.vs/
+.vscode/
+
+# Build output folders (optional, if you have builds in the project)
+Build/
+Builds/
