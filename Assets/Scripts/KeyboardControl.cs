@@ -1,31 +1,30 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Detects keyboard controls and passes target velocity to the wheel controller
+/// Detects keyboard controls and passes RAW input axes to the Articulation wheel and clamp controllers.
 /// </summary>
+
 public class KeyboardControl : MonoBehaviour
 {
     public ArticulationWheelController wheelController;
 
-    public float speed = 50f;          // linear speed multiplier
-    public float angularSpeed = 20f;   // rotational speed multiplier
+    private float rawLinearX;
+    private float rawLinearZ;
+    private float rawAngularY;
 
-    private float targetLinearX;
-    private float targetLinearZ;
-    private float targetAngularY;
 
     void Update()
     {
-        // Get key input
-        targetLinearZ = Input.GetAxisRaw("HolonomicVertical") * speed;    // W/S
-        targetLinearX = Input.GetAxisRaw("HolonomicHorizontal") * speed;  // A/D
-        targetAngularY = Input.GetAxisRaw("HolonomicRotate") * angularSpeed; // optional, define "Rotate" axis in InputManager
+        // Get raw key input axes
+        rawLinearZ = Input.GetAxisRaw("HolonomicVertical");   // W/S
+        rawLinearX = Input.GetAxisRaw("HolonomicHorizontal"); // A/D
+        rawAngularY = Input.GetAxisRaw("HolonomicRotate");    // optional, define "Rotate" axis
+
     }
 
     void FixedUpdate()
     {
-        wheelController.SetRobotVelocity(targetLinearX, targetLinearZ, targetAngularY);
+        wheelController.SetRobotInput(rawLinearX, rawLinearZ, rawAngularY);
     }
+
 }

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -11,11 +9,13 @@ public class ArticulationWheelController : MonoBehaviour
     public ArticulationBody robotBody;
     
     // NOTE: Force/Torque Multipliers will need significant tuning
-    public float forceMultiplier = 1250f; 
-    public float torqueMultiplier = 50f;
+    // These are the ONLY two public variables remaining for tuning the robot's movement.
+    
+    public float forceMultiplier = 1250*50f; 
+    public float torqueMultiplier = 50*20f;
 
-    private Vector3 targetVelocity;
-    private float targetAngularY;
+    private Vector3 rawTargetVelocity; // Stores raw input axes (x, 0, z)
+    private float rawTargetAngularY;   // Stores raw angular input
 
     void Start()
     {
@@ -24,24 +24,25 @@ public class ArticulationWheelController : MonoBehaviour
     }
 
     /// <summary>
-    /// Called from KeyboardControl
+    /// Called from KeyboardControl. Sets the raw input axes.
     /// </summary>
-    public void SetRobotVelocity(float x, float z, float angularY)
+    public void SetRobotInput(float x, float z, float angularY)
     {
         // x is sideways (strafe), z is forward/backward
-        targetVelocity = new Vector3(x, 0f, z); 
-        targetAngularY = angularY;
+        rawTargetVelocity = new Vector3(x, 0f, z); 
+        rawTargetAngularY = angularY;
     }
 
     void FixedUpdate()
     {
         // --- 1. Apply force for linear movement ---
-        if (targetVelocity.magnitude > 0f)
+        // We use the squared magnitude for a tiny bit of efficiency, 
+        // as we only care if it's non-zero.
+        if (rawTargetVelocity.sqrMagnitude > 0f) 
         {
-            // TRANSFORM THE VELOCITY/FORCE VECTOR FROM LOCAL SPACE TO WORLD SPACE
-            // This is the CRITICAL change: it ensures that when you press 'A', the robot
-            // moves to its local left (transform.right) and 'W' moves it forward (transform.forward).
-            Vector3 localForceDirection = targetVelocity.normalized;
+            // Transform the normalized input vector from local space to world space, 
+            // then scale by the forceMultiplier.
+            Vector3 localForceDirection = rawTargetVelocity.normalized;
             Vector3 worldForce = transform.TransformDirection(localForceDirection) * forceMultiplier;
             
             // Apply the force at the body's center of mass
@@ -49,10 +50,11 @@ public class ArticulationWheelController : MonoBehaviour
         }
 
         // --- 2. Apply torque for rotation ---
-        if (Mathf.Abs(targetAngularY) > 0f)
+        if (Mathf.Abs(rawTargetAngularY) > 0f)
         {
-            // Apply torque around the robot's UP axis (local Y)
-            Vector3 torque = transform.up * targetAngularY * torqueMultiplier;
+            // Apply torque around the robot's UP axis (local Y), scaled by the input 
+            // magnitude and the torqueMultiplier.
+            Vector3 torque = transform.up * rawTargetAngularY * torqueMultiplier;
             robotBody.AddTorque(torque, ForceMode.Force);
         }
     }
